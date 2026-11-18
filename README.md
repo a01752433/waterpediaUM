@@ -1,47 +1,30 @@
-# waterpediaUM
+# waterpedia UM
 
-**waterpediaUM** is a work-in-progress project for organizing and presenting water-related geographic information.
+Design prototype for a water-quality workspace at Universiti Malaya. It follows the five-screen flow from the HCI interview: map the campus lakes first, open one station, compare a flow path, clean a field log, then export a citable archive.
 
-> Project status: **Early development**
+The numbers on screen are sample data for Varsity Lake and the UM Green Belt wetland, from September 2025 through November 2026. Nothing is saved to a server.
 
-## Overview
+## Run it
 
-This repository currently serves as the starting point for a water quality mapping application. The codebase will evolve to include map views, location information, and tools for exploring water-related data.
-
-## Repository structure
-
-```text
-.
-├── README.md
-├── screens/
-│   └── homes/
-│       └── map.ts
-└── water.txt
+```bash
+npm install
+npm run dev
 ```
 
-- `screens/homes/map.ts` — reserved for the application's home-map screen.
-- `water.txt` — supporting project file for water-related content.
+Open the local address Vite prints, usually `http://localhost:5173`.
 
-## Getting started
+## Screens
 
-The project does not yet include a package manifest or runnable application setup. No dependencies or build commands are required at this stage.
+| Route | Screen |
+| --- | --- |
+| `/` | Map overview and triage |
+| `/station/:id` | One station: WQI parameters, forecast, metadata |
+| `/compare` | Flow-path and multi-station comparison |
+| `/upload` | Upload, cleaning review, and QA flags |
+| `/archive` | Historical table, citation, and API snippet |
 
-To contribute to the current source:
+Station detail stays off the top navigation. Open it from a station card, a comparison link, or an archive row.
 
-1. Clone the repository.
-2. Open it in your preferred editor.
-3. Work on the files in `screens/` or add the application framework and configuration when ready.
+## Stack
 
-## Contributing
-
-Contributions are welcome as the project takes shape. Please make focused changes and keep documentation up to date.
-
-Before submitting a change:
-
-1. Confirm that any new files or dependencies are intentional.
-2. Describe the purpose of the change clearly.
-3. Test the application or relevant code before opening a pull request.
-
-## Project status
-
-This README documents the current repository state. Features and setup instructions will be expanded as implementation begins.
+TypeScript, React, and Vite. Styling lives in `src/styles/global.css`. Sample stations live in `src/data/mock.ts`.
