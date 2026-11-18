@@ -9,7 +9,7 @@ const links = [
 ];
 
 export function Shell() {
-  const { compareIds, message } = useApp();
+  const { compareIds, message, theme, toggleTheme } = useApp();
 
   return (
     <div className="app">
@@ -32,6 +32,16 @@ export function Shell() {
           ))}
         </nav>
         <p className="campus-chip">Universiti Malaya · Varsity Lake</p>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+        >
+          <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+          <span>{theme === "light" ? "Dark" : "Light"}</span>
+        </button>
       </header>
       <Outlet />
       {message && (
