@@ -18,11 +18,22 @@ type LineChartProps = {
   max: number;
   thresholds?: Threshold[];
   height?: number;
+  width?: number;
+  showPoints?: boolean;
 };
 
-export function LineChart({ labels, lines, min, max, thresholds = [], height = 250 }: LineChartProps) {
-  const width = 720;
-  const pad = { l: 40, r: 16, t: 18, b: 32 };
+export function LineChart({
+  labels,
+  lines,
+  min,
+  max,
+  thresholds = [],
+  height = 250,
+  width = 720,
+  showPoints = true,
+}: LineChartProps) {
+  const padRight = thresholds.length > 0 ? 118 : 18;
+  const pad = { l: 44, r: padRight, t: 18, b: 32 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
   const span = max - min || 1;
@@ -40,8 +51,15 @@ export function LineChart({ labels, lines, min, max, thresholds = [], height = 2
     return path.trim();
   };
 
-  const ticks = 4;
-  const grid = Array.from({ length: ticks + 1 }, (_, index) => min + (span * index) / ticks);
+  const rawStep = span / 4;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+  const tickStep =
+    (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10) * magnitude;
+  const grid: number[] = [];
+  for (let value = Math.ceil(min / tickStep) * tickStep; value <= max + tickStep * 0.001; value += tickStep) {
+    grid.push(Math.round(value * 1000) / 1000);
+  }
 
   return (
     <svg className="chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Time series chart">
@@ -49,23 +67,19 @@ export function LineChart({ labels, lines, min, max, thresholds = [], height = 2
         <g key={tick}>
           <line className="chart-grid" x1={pad.l} x2={width - pad.r} y1={yAt(tick)} y2={yAt(tick)} />
           <text className="chart-tick" x={pad.l - 8} y={yAt(tick) + 4} textAnchor="end">
-            {Math.round(tick)}
+            {Number.isInteger(tick) ? tick : tick.toFixed(1)}
           </text>
         </g>
       ))}
       {thresholds.map((threshold) => (
-        <g key={threshold.label}>
-          <line
-            className="chart-threshold"
-            x1={pad.l}
-            x2={width - pad.r}
-            y1={yAt(threshold.value)}
-            y2={yAt(threshold.value)}
-          />
-          <text className="chart-threshold-label" x={width - pad.r} y={yAt(threshold.value) - 4} textAnchor="end">
-            {threshold.label}
-          </text>
-        </g>
+        <line
+          key={threshold.label}
+          className="chart-threshold"
+          x1={pad.l}
+          x2={width - pad.r}
+          y1={yAt(threshold.value)}
+          y2={yAt(threshold.value)}
+        />
       ))}
       {lines.map((line) => (
         <path
@@ -78,6 +92,31 @@ export function LineChart({ labels, lines, min, max, thresholds = [], height = 2
           strokeLinejoin="round"
           strokeLinecap="round"
         />
+      ))}
+      {showPoints &&
+        lines.map((line) =>
+          line.values.map((value, index) =>
+            value == null ? null : (
+              <circle
+                key={line.id + "-dot-" + index}
+                cx={xAt(index)}
+                cy={yAt(value)}
+                r={2.6}
+                fill={line.color}
+              />
+            ),
+          ),
+        )}
+      {thresholds.map((threshold) => (
+        <text
+          key={"threshold-label-" + threshold.label}
+          className="chart-threshold-label"
+          x={width - 4}
+          y={yAt(threshold.value) - 4}
+          textAnchor="end"
+        >
+          {threshold.label}
+        </text>
       ))}
       {labels.map((label, index) =>
         index % 2 === 0 ? (
