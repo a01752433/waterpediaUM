@@ -71,37 +71,53 @@ export function ArchivePage() {
         </p>
       </div>
 
-      <div className="filter-bar">
-        <label className="field">
-          <span>QA/QC</span>
-          <select value={qa} onChange={(event) => setQa(event.target.value as "all" | QaStatus)}>
-            <option value="all">Any status</option>
-            <option value="Verified">Verified</option>
-            <option value="Suspect">Suspect</option>
-            <option value="Missing">Missing</option>
-          </select>
-        </label>
-        <label className="field">
-          <span>Reading</span>
-          <select value={reading} onChange={(event) => setReading(event.target.value as Reading)}>
-            <option value="all">Lab and probe</option>
-            <option value="Lab">Lab</option>
-            <option value="Probe">Probe</option>
-          </select>
-        </label>
-        <label className="field">
-          <span>Visibility</span>
-          <select value={visibility} onChange={(event) => setVisibility(event.target.value as Visibility)}>
-            <option value="all">All</option>
-            <option value="Public">Public</option>
-            <option value="Embargo">Embargo</option>
-            <option value="Restricted">Restricted</option>
-          </select>
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={completeOnly} onChange={(event) => setCompleteOnly(event.target.checked)} />
-          <span>Completeness 90% or better</span>
-        </label>
+      <div className="filter-bar compact">
+        <div className="chip-row">
+          {(
+            [
+              ["all", "Any QA"],
+              ["Verified", "Verified"],
+              ["Suspect", "Suspect"],
+              ["Missing", "Missing"],
+            ] as const
+          ).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={qa === value} onClick={() => setQa(value)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="chip-row">
+          {(
+            [
+              ["all", "Lab and probe"],
+              ["Lab", "Lab"],
+              ["Probe", "Probe"],
+            ] as const
+          ).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={reading === value} onClick={() => setReading(value)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="chip-row">
+          {(
+            [
+              ["all", "All access"],
+              ["Public", "Public"],
+              ["Embargo", "Embargo"],
+              ["Restricted", "Restricted"],
+            ] as const
+          ).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={visibility === value} onClick={() => setVisibility(value)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="chip-row">
+          <button type="button" aria-pressed={completeOnly} onClick={() => setCompleteOnly((current) => !current)}>
+            90%+ complete
+          </button>
+        </div>
         <div className="bar-actions">
           <button type="button" className="btn" onClick={exportCsv}>
             Tidy CSV

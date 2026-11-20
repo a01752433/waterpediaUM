@@ -117,9 +117,9 @@ export function ComparePage() {
             <header className="card-head">
               <div>
                 <p className="eyebrow">{chosen.length} stations · shared timeline</p>
-                <h2>{metricMeta[metric].label}</h2>
+                <h1>{metricMeta[metric].label}</h1>
               </div>
-              <div className="segmented">
+              <div className="segmented compact">
                 {(Object.keys(metricMeta) as Metric[]).map((key) => (
                   <button key={key} type="button" aria-pressed={metric === key} onClick={() => setMetric(key)}>
                     {metricMeta[key].label}

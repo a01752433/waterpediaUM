@@ -114,12 +114,12 @@ export function StationPage() {
         })}
       </div>
 
-      <div className="segmented extra-tabs">
+      <div className="segmented compact extra-tabs">
         {(
           [
-            ["nutrients", "Nutrients & chlorophyll-a"],
-            ["pending", "Temperature & turbidity"],
-            ["metals", "Heavy metals"],
+            ["nutrients", "Nutrients"],
+            ["pending", "Temp"],
+            ["metals", "Metals"],
           ] as const
         ).map(([key, label]) => (
           <button key={key} type="button" aria-pressed={extra === key} onClick={() => setExtra(key)}>
@@ -151,12 +151,12 @@ export function StationPage() {
               <p className="eyebrow">Forecast</p>
               <h2>Observed and predicted WQI</h2>
             </div>
-            <div className="segmented">
+            <div className="segmented compact">
               {(
                 [
-                  ["48h", "48-hour"],
-                  ["7d", "7-day"],
-                  ["season", "Monsoon / dry"],
+                  ["48h", "48h"],
+                  ["7d", "7d"],
+                  ["season", "Season"],
                 ] as const
               ).map(([key, label]) => (
                 <button key={key} type="button" aria-pressed={horizon === key} onClick={() => setHorizon(key)}>
