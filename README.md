@@ -1,191 +1,191 @@
 # waterpedia UM
 
-Prototipo para ver la calidad del agua de Tasik Varsiti y el humedal UM Green Belt, en Universiti Malaya. El mapa, las estaciones, las muestras y los reportes usan datos de muestra (septiembre 2025 a noviembre 2026). Nada de lo que pulses se guarda en un servidor: si cierras el navegador, los cambios de pantalla no quedan registrados en internet.
+A prototype for looking at water quality at Tasik Varsiti and the UM Green Belt wetland, Universiti Malaya. The map, stations, samples, and reports use sample data from September 2025 through November 2026. Nothing you click is saved to a server. If you close the browser, those on-screen changes are not stored online.
 
-Esta guía es para abrir el proyecto y trabajar en él aunque no hayas programado antes.
+This guide is for opening the project and working in it even if you have never programmed before.
 
-## 1. Instala dos programas
+## 1. Install two programs
 
-Hazlo una sola vez en la computadora.
+Do this once on the computer.
 
-1. **Git**, para bajar el proyecto y guardar tu trabajo en una rama. Descárgalo en [https://git-scm.com/download/win](https://git-scm.com/download/win). En el instalador puedes dejar todas las opciones como vienen y pulsar Next hasta el final.
-2. **Node.js**, el programa que enciende la página en tu computadora. Entra a [https://nodejs.org](https://nodejs.org) y descarga el botón que dice **LTS** (la versión recomendada). Instálalo con las opciones que vienen marcadas.
+1. **Git**, so you can download the project and save your work on a branch. Download it from [https://git-scm.com/download/win](https://git-scm.com/download/win). In the installer you can leave every option as it is and click Next until the end.
+2. **Node.js**, the program that turns the page on your computer. Go to [https://nodejs.org](https://nodejs.org) and download the button that says **LTS** (the recommended version). Install it with the options that are already checked.
 
-Cuando terminen los dos instaladores, cierra cualquier ventana de terminal o de Cursor que ya estuviera abierta y ábrelos de nuevo. Si no lo haces, la computadora a veces sigue sin ver los programas nuevos.
+When both installers finish, close any terminal or Cursor window that was already open, then open them again. If you skip this, the computer sometimes still cannot see the new programs.
 
-### Comprueba que sí se instalaron
+### Check that they installed
 
-1. Pulsa la tecla Windows, escribe `PowerShell` y ábrelo.
-2. Escribe esto y pulsa Enter:
+1. Press the Windows key, type `PowerShell`, and open it.
+2. Type this and press Enter:
 
 ```powershell
 git --version
 ```
 
-3. Luego escribe esto y pulsa Enter:
+3. Then type this and press Enter:
 
 ```powershell
 node --version
 ```
 
-En los dos casos debe aparecer un número de versión, por ejemplo `git version 2.45.0` o `v22.14.0`. Si PowerShell dice que no reconoce `git` o `node`, cierra esa ventana, ábrela otra vez y repite los dos comandos. Si sigue fallando, vuelve a ejecutar el instalador.
+Each one should print a version number, for example `git version 2.45.0` or `v22.14.0`. If PowerShell says it does not recognize `git` or `node`, close that window, open it again, and repeat both commands. If it still fails, run the installer again.
 
-## 2. Baja el proyecto
+## 2. Download the project
 
-En la misma ventana de PowerShell, ve a la carpeta donde quieres guardarlo. Por ejemplo, el Escritorio:
+In the same PowerShell window, go to the folder where you want to keep it. For example, the Desktop:
 
 ```powershell
 cd $env:USERPROFILE\Desktop
 ```
 
-`cd` significa “entra a esta carpeta”. Luego copia el proyecto desde GitHub:
+`cd` means “go into this folder.” Then copy the project from GitHub:
 
 ```powershell
 git clone https://github.com/a01752433/waterpediaUM.git
 ```
 
-Eso crea una carpeta llamada `waterpediaUM`. Entra en ella:
+That creates a folder named `waterpediaUM`. Go into it:
 
 ```powershell
 cd waterpediaUM
 ```
 
-Ábrela en Cursor: menú **File → Open Folder** y elige esa carpeta `waterpediaUM`.
+Open it in Cursor: **File → Open Folder**, and choose that `waterpediaUM` folder.
 
-## 3. Enciende la página
+## 3. Turn the page on
 
-Estos comandos se escriben en la terminal de Cursor. Ábrela con **Terminal → New Terminal**. Tiene que decir que estás dentro de `waterpediaUM`. Si no, escribe `cd` y la ruta de la carpeta.
+Type these commands in Cursor’s terminal. Open it with **Terminal → New Terminal**. It should say you are inside `waterpediaUM`. If it does not, type `cd` and the path to the folder.
 
-La primera vez, instala lo que el proyecto necesita. Tarda un poco y solo hace falta repetirlo si alguien agrega una herramienta nueva:
+The first time, install what the project needs. This takes a little while. You only repeat it if someone adds a new tool:
 
 ```powershell
 npm install
 ```
 
-Después, enciende la página:
+Then turn the page on:
 
 ```powershell
 npm run dev
 ```
 
-En la terminal aparece una línea como esta:
+The terminal prints a line like this:
 
 ```text
 Local:   http://localhost:5173/
 ```
 
-Copia esa dirección, pégala en Chrome o Edge y pulsa Enter. `localhost` significa “esta misma computadora”. No hace falta internet para ver la página una vez que ya corriste `npm install`.
+Copy that address, paste it into Chrome or Edge, and press Enter. `localhost` means “this computer.” You do not need the internet to view the page after `npm install` has finished.
 
-Si en vez de 5173 dice que el puerto está ocupado y muestra otro número, por ejemplo `http://localhost:5174/`, abre ese. Es la misma página.
+If it says port 5173 is already in use and prints another number, for example `http://localhost:5174/`, open that one. It is the same page.
 
-Para apagarla, haz clic en la terminal y pulsa `Ctrl+C`. Confirma con `S` o Enter si te lo pregunta. La página deja de cargar hasta que vuelvas a escribir `npm run dev`.
+To turn it off, click the terminal and press `Ctrl+C`. Press `Y` or Enter if it asks you to confirm. The page stops loading until you run `npm run dev` again.
 
-Cada vez que quieras trabajar, abre la carpeta en Cursor y solo repite `npm run dev`. No hace falta clonar ni instalar de nuevo.
+Each time you want to work, open the folder in Cursor and only run `npm run dev`. You do not need to clone or install again.
 
-## 4. Qué hay en la página
+## 4. What is on the page
 
-| Dónde | Qué ves |
+| Where | What you see |
 | --- | --- |
-| `/` | El mapa del lago, las estaciones y los filtros |
-| Perfil | Pulsa el recuadro de **Firdaus** arriba a la derecha. Ahí están las muestras por mes y el mapa de ese mes |
-| `/upload` | Subir una hoja de campo y revisar la calidad del dato. Desde el mapa, el botón **Upload samples** |
-| `/compare` | Comparar varias estaciones |
-| `/archive` | La tabla histórica, la cita y un ejemplo para exportar |
+| `/` | The lake map, the stations, and the filters |
+| Profile | Click the **Firdaus** chip at the top right. That page shows samples by month and the map for that month |
+| `/upload` | Upload a field sheet and review the data. From the map, use the **Upload samples** button |
+| `/compare` | Compare several stations |
+| `/archive` | The history table, the citation, and an export example |
 
-La dirección completa se arma pegando la ruta al final. Si tu terminal dice `http://localhost:5173/`, el archivo está en `http://localhost:5173/archive`.
+The full address is the local link plus the path. If your terminal says `http://localhost:5173/`, the archive is at `http://localhost:5173/archive`.
 
-## 5. Cómo se trabaja en ramas
+## 5. How branches work
 
-Piensa en el proyecto como un documento compartido.
+Think of the project as a shared document.
 
-- **`main`** es la copia de todos. No escribas ahí tu cambio del día.
-- Una **rama** es tu copia aparte. Puedes probar cosas sin pisar lo que ya está en `main` ni lo que está haciendo otra persona.
+- **`main`** is the copy everyone shares. Do not do the day’s edits there.
+- A **branch** is your own copy. You can try changes without overwriting what is already on `main`, and without overwriting what someone else is doing.
 
-El nombre de una rama conviene que diga quién eres y qué haces, en minúsculas y con guiones. Ejemplo: `ana/ajustar-mapa`.
+A good branch name says who you are and what you are changing, in lowercase, with hyphens. Example: `ana/adjust-map`.
 
-### Ponte al día antes de empezar
+### Get the latest copy before you start
 
 ```powershell
 git checkout main
 git pull
 ```
 
-`checkout main` te coloca en la copia compartida. `pull` baja lo último que ya se unió en GitHub.
+`checkout main` puts you on the shared copy. `pull` downloads the latest changes that have already been merged on GitHub.
 
-### Crea tu rama
+### Create your branch
 
 ```powershell
-git checkout -b ana/ajustar-mapa
+git checkout -b ana/adjust-map
 ```
 
-Cambia `ana/ajustar-mapa` por tu nombre y el cambio. A partir de aquí, lo que edites queda en esa rama, no en `main`.
+Replace `ana/adjust-map` with your name and the change. From here, what you edit stays on that branch, not on `main`.
 
-Para ver en qué rama estás:
+To see which branch you are on:
 
 ```powershell
 git status
 ```
 
-La primera línea dice `On branch` y el nombre.
+The first line says `On branch` and the name.
 
-### Guarda el cambio y súbelo
+### Save the change and upload it
 
-Cuando la página se vea como quieres:
+When the page looks the way you want:
 
 ```powershell
 git status
 git add .
-git commit -m "Ajustar el mapa del lago"
-git push -u origin ana/ajustar-mapa
+git commit -m "Adjust the lake map"
+git push -u origin ana/adjust-map
 ```
 
-Qué hace cada uno:
+What each command does:
 
-- `git status` lista los archivos que cambiaste. Revísalo antes de seguir.
-- `git add .` prepara esos archivos. El punto significa “esta carpeta”.
-- `git commit -m "..."` guarda una foto de ese momento en tu computadora. El texto entre comillas es el título del cambio. Escríbelo en una frase corta.
-- `git push -u origin ana/ajustar-mapa` sube esa rama a GitHub. El `-u` solo hace falta la primera vez en esa rama. Después basta con `git push`.
+- `git status` lists the files you changed. Read it before you continue.
+- `git add .` stages those files. The dot means “this folder.”
+- `git commit -m "..."` saves a snapshot on your computer. The text in quotes is the title of the change. Keep it to one short sentence.
+- `git push -u origin ana/adjust-map` uploads that branch to GitHub. You only need `-u` the first time on that branch. After that, `git push` is enough.
 
-En el `push`, el nombre después de `origin` tiene que ser el mismo que usaste en `git checkout -b`.
+In `push`, the name after `origin` has to be the same name you used in `git checkout -b`.
 
-### Pide que lo unan a `main`
+### Ask for it to be merged into `main`
 
-Al terminar el `push`, GitHub a veces imprime un enlace para abrir un **Pull Request**. Ábrelo. Si no aparece, entra al repositorio en el navegador: [https://github.com/a01752433/waterpediaUM](https://github.com/a01752433/waterpediaUM). Arriba sale un aviso para comparar tu rama. Crea el Pull Request hacia `main` y escribe en pocas líneas qué cambiaste y cómo lo probaste (por ejemplo: “abrí el mapa y el perfil”).
+When `push` finishes, GitHub sometimes prints a link to open a **pull request**. Open it. If no link appears, go to the repository in the browser: [https://github.com/a01752433/waterpediaUM](https://github.com/a01752433/waterpediaUM). A banner at the top offers to compare your branch. Create the pull request into `main`, and write a few lines about what you changed and how you tried it (for example: “I opened the map and the profile”).
 
-Otra persona revisa ese pedido y lo une a `main`. Tú no unas tu propia rama si el equipo acordó que alguien más la revise.
+Someone else reviews that request and merges it into `main`. Do not merge your own branch if the team agreed that another person reviews it first.
 
-### Cambia de rama
+### Switch branches
 
-Para volver a la tuya, o para ver la de otra persona:
+To go back to yours, or to look at someone else’s:
 
 ```powershell
-git checkout ana/ajustar-mapa
+git checkout ana/adjust-map
 ```
 
-Si esa rama solo existe en GitHub y no en tu computadora:
+If that branch exists on GitHub but not on your computer yet:
 
 ```powershell
 git fetch
-git checkout ana/ajustar-mapa
+git checkout ana/adjust-map
 ```
 
-`fetch` mira qué ramas hay en GitHub sin modificar tus archivos.
+`fetch` looks up which branches are on GitHub without changing your files.
 
-### Trae a tu rama lo nuevo de `main`
+### Bring new `main` work into your branch
 
-Si `main` avanzó mientras tú seguías en tu rama:
+If `main` moved forward while you were still on your branch:
 
 ```powershell
 git checkout main
 git pull
-git checkout ana/ajustar-mapa
+git checkout ana/adjust-map
 git merge main
 ```
 
-Eso copia en tu rama lo que ya está aceptado en `main`. Si Git habla de un **conflict**, no borres archivos al azar: avisa a quien te está ayudando y enséñale el mensaje.
+That copies the accepted `main` work into your branch. If Git talks about a **conflict**, do not delete files at random. Show the message to the person helping you.
 
-## 6. Tres cosas que no hay que hacer
+## 6. Three things not to do
 
-- No hagas los cambios del día directo en `main`. Crea una rama.
-- No subas contraseñas ni archivos llamados `.env`. Este prototipo no los necesita.
-- No uses `git push --force`. Puede borrar el trabajo de otra persona en GitHub.
+- Do not make the day’s changes directly on `main`. Create a branch.
+- Do not upload passwords or files named `.env`. This prototype does not need them.
+- Do not use `git push --force`. It can erase someone else’s work on GitHub.
