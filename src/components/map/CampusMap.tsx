@@ -20,6 +20,9 @@ type Layers = {
   outlets: boolean;
 };
 
+/** One month's reading per station, used by the time slider. */
+export type MonthSnapshot = ReadonlyMap<string, { klass: Station["klass"]; sampled: boolean }>;
+
 type CampusMapProps = {
   stations: Station[];
   boundary: Station[];
@@ -31,13 +34,23 @@ type CampusMapProps = {
   detailOpen: boolean;
   filterColor: string | null;
   matchedIds: ReadonlySet<string>;
+  snapshot?: MonthSnapshot | null;
 };
 
-function pinIcon(station: Station, selected: boolean, filterColor: string | null, matched: boolean) {
-  const painted = Boolean(filterColor) && matched;
+function pinIcon(
+  station: Station,
+  selected: boolean,
+  filterColor: string | null,
+  matched: boolean,
+  month?: { klass: Station["klass"]; sampled: boolean },
+) {
+  // When the time slider shows a past month, colour by that month's class instead of the latest one.
+  const klass = month ? month.klass : station.klass;
+  const hasSample = month ? month.sampled : station.fresh;
+  const painted = Boolean(filterColor) && matched && !month;
   const dimmed = !matched;
-  const color = dimmed ? "#94a3b8" : painted && filterColor ? filterColor : station.fresh ? CLASS_COLOR[station.klass] : "transparent";
-  const border = dimmed ? "#cbd5e1" : station.fresh ? "white" : "#b7c0d6";
+  const color = dimmed ? "#94a3b8" : painted && filterColor ? filterColor : hasSample ? CLASS_COLOR[klass] : "transparent";
+  const border = dimmed ? "#cbd5e1" : hasSample ? "white" : "#b7c0d6";
   const dot = dimmed ? 10 : painted ? (selected ? 20 : 16) : selected ? 18 : 14;
   const ring = dimmed
     ? "box-shadow:none;"
@@ -46,7 +59,7 @@ function pinIcon(station: Station, selected: boolean, filterColor: string | null
       : painted
         ? `box-shadow:0 0 0 4px ${filterColor}55, 0 4px 12px rgba(0,0,0,.4);`
         : "box-shadow:0 3px 8px rgba(0,0,0,.4);";
-  const alert = classDropped(station)
+  const alert = !month && classDropped(station)
     ? `<span style="position:absolute;top:-1px;right:${selected ? 16 : 0}px;width:8px;height:8px;border-radius:99px;background:#ef4444;border:1.5px solid white"></span>`
     : "";
   const trend = station.trend === "improving" ? "↑" : station.trend === "worsening" ? "↓" : "→";
@@ -119,6 +132,7 @@ export function CampusMap({
   detailOpen,
   filterColor,
   matchedIds,
+  snapshot = null,
 }: CampusMapProps) {
   const flowPoints = FLOW_PATH.map((id) => stations.find((station) => station.id === id))
     .filter((station): station is Station => Boolean(station))
@@ -154,11 +168,12 @@ export function CampusMap({
       )}
       {stations.map((station) => {
         const matched = matchedIds.has(station.id);
+        const month = snapshot?.get(station.id);
         return (
           <Marker
-            key={`${station.id}-${selectedId === station.id}-${matched}-${filterColor ?? "class"}-${station.klass}`}
+            key={`${station.id}-${selectedId === station.id}-${matched}-${filterColor ?? "class"}-${station.klass}-${month ? `${month.klass}${month.sampled}` : "latest"}`}
             position={parseCoords(station.coords)}
-            icon={pinIcon(station, selectedId === station.id, filterColor, matched)}
+            icon={pinIcon(station, selectedId === station.id, filterColor, matched, month)}
             zIndexOffset={selectedId === station.id ? 600 : matched ? 120 : 0}
             eventHandlers={{ click: () => onSelect(station.id) }}
           />

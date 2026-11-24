@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, LocateFixed, Search, SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ArrowRight, History, LocateFixed, Pause, Play, Search, SlidersHorizontal, X } from "lucide-react";
 import { ClassMark } from "../components/Charts";
-import { CampusMap } from "../components/map/CampusMap";
+import { CampusMap, type MonthSnapshot } from "../components/map/CampusMap";
 import { StationDetail } from "../components/map/StationDetail";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import {
   FLOW_PATH,
+  MONTHS,
   classDropped,
   doBelowClassII,
   stations,
@@ -19,6 +20,24 @@ type Range = "all" | "recent";
 
 // NWQS Class II limits, kept in one place so they only need changing once.
 const CLASS_II = { do: 5, nh3n: 0.3, cod: 25, phMin: 6, phMax: 9 };
+
+// Time slider: how long each month stays on screen while playing.
+const PLAY_STEP_MS = 900;
+const LAST_MONTH = MONTHS.length - 1;
+
+// NWQS class from a WQI score (same thresholds as the sample data).
+function wqiToClass(wqi: number): NwqsClass {
+  return wqi >= 92.7 ? "I" : wqi >= 76.5 ? "II" : wqi >= 51.9 ? "III" : wqi >= 31 ? "IV" : "V";
+}
+
+type MonthReading = { klass: NwqsClass; wqi: number; do: number; sampled: boolean };
+
+// One station's reading for a month. "sampled" is false after the station's last sample date.
+function readingFor(station: Station, monthDate: string): MonthReading | null {
+  const point = station.series.find((item) => item.date === monthDate);
+  if (!point) return null;
+  return { klass: wqiToClass(point.wqi), wqi: point.wqi, do: point.do, sampled: point.date <= station.lastSample };
+}
 
 // "Last 30 days" counts back from the newest sample in the data, not from a fixed date.
 const RECENT_DAYS = 30;
@@ -62,6 +81,8 @@ export function MapPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [frameToken, setFrameToken] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [monthIndex, setMonthIndex] = useState<number | null>(null); // null = latest readings
+  const [playing, setPlaying] = useState(false);
   const [layers, setLayers] = useState({
     catchment: true,
     land: true,
@@ -90,6 +111,44 @@ export function MapPage() {
       return a.wqi - b.wqi;
     });
   }, [body, focus, hideGaps, klass, lowDo, parameter, query, range, source]);
+
+  // Play the slider: step one month at a time and stop at the last month.
+  useEffect(() => {
+    if (!playing) return;
+    const timer = window.setInterval(() => {
+      setMonthIndex((current) => {
+        const next = (current ?? -1) + 1;
+        if (next >= LAST_MONTH) {
+          setPlaying(false);
+          return LAST_MONTH;
+        }
+        return next;
+      });
+    }, PLAY_STEP_MS);
+    return () => window.clearInterval(timer);
+  }, [playing]);
+
+  const monthDate = monthIndex === null ? null : MONTHS[monthIndex];
+  const snapshot = useMemo<MonthSnapshot | null>(() => {
+    if (!monthDate) return null;
+    const map = new Map<string, { klass: NwqsClass; sampled: boolean }>();
+    for (const station of stations) {
+      const reading = readingFor(station, monthDate);
+      if (reading) map.set(station.id, { klass: reading.klass, sampled: reading.sampled });
+    }
+    return map;
+  }, [monthDate]);
+  const monthSeason = monthDate ? stations[0]?.series.find((point) => point.date === monthDate)?.season : undefined;
+
+  const togglePlay = () => {
+    if (playing) {
+      setPlaying(false);
+      return;
+    }
+    // Start from the beginning when on "latest" or already at the end.
+    if (monthIndex === null || monthIndex >= LAST_MONTH) setMonthIndex(0);
+    setPlaying(true);
+  };
 
   // Only show a station that still matches the filters; otherwise fall back to the first match.
   const selected = visible.find((station) => station.id === selectedId) ?? visible[0] ?? null;
@@ -172,6 +231,7 @@ export function MapPage() {
         detailOpen={detailsOpen}
         filterColor={filterColor}
         matchedIds={matchedIds}
+        snapshot={snapshot}
       />
 
       <div className="pointer-events-none absolute inset-0 z-[500]">
@@ -214,7 +274,7 @@ export function MapPage() {
               )}
             </button>
           </div>
-          <p className="mt-2 px-4 text-sm text-white/60">
+          <p className="mt-2 ml-2 inline-block rounded-full bg-[#14172ccc] px-3 py-1 text-sm text-white/85 backdrop-blur-sm">
             {visible.length} {visible.length === 1 ? "station" : "stations"}
             {focus ? " · flow path" : ""}
             {lowDo ? ` · DO < ${CLASS_II.do} mg/L` : ""}
@@ -334,7 +394,12 @@ export function MapPage() {
 
           {!detailsOpen &&
             (selected ? (
-              <StationCard station={selected} onOpenDetails={() => setDetailsOpen(true)} />
+              <StationCard
+                station={selected}
+                onOpenDetails={() => setDetailsOpen(true)}
+                monthDate={monthDate}
+                reading={monthDate ? readingFor(selected, monthDate) : null}
+              />
             ) : (
               <Card className="space-y-3 p-5 text-sm text-white/60">
                 <p className="m-0">No stations match these filters.</p>
@@ -387,6 +452,59 @@ export function MapPage() {
             }`}
           >
             18 mm · last 36 hours
+          </div>
+        )}
+
+        {!detailsOpen && (
+          <div className="pointer-events-auto absolute right-20 bottom-16 left-4 rounded-2xl border border-white/10 bg-[#12152cf2] px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md md:left-[640px] xl:left-[760px]">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={togglePlay}
+                aria-label={playing ? "Pause" : "Play through the months"}
+                className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-[#6d4dff] text-white hover:bg-[#7c5fff]"
+              >
+                {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="m-0 text-sm font-semibold text-white">
+                    {monthDate ? formatMonth(monthDate) : "Latest readings"}
+                    {monthSeason && <span className="ml-2 text-xs font-normal text-white/55">{monthSeason} season</span>}
+                  </p>
+                  {monthIndex !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlaying(false);
+                        setMonthIndex(null);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full border-0 bg-transparent px-2 py-0.5 text-xs text-[#b7a6ff] hover:bg-white/10"
+                    >
+                      <History className="size-3.5" /> Back to latest
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={LAST_MONTH}
+                  step={1}
+                  value={monthIndex ?? LAST_MONTH}
+                  onChange={(event) => {
+                    setPlaying(false);
+                    setMonthIndex(Number(event.target.value));
+                  }}
+                  aria-label="Choose a month"
+                  aria-valuetext={formatMonth(MONTHS[monthIndex ?? LAST_MONTH])}
+                  className="mt-1 w-full accent-[#8b7cff]"
+                />
+                <div className="flex justify-between text-[11px] text-white/45">
+                  <span>{formatMonth(MONTHS[0])}</span>
+                  <span>{formatMonth(MONTHS[LAST_MONTH])}</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -451,7 +569,17 @@ function FilterChip({
   );
 }
 
-function StationCard({ station, onOpenDetails }: { station: Station; onOpenDetails: () => void }) {
+function StationCard({
+  station,
+  onOpenDetails,
+  monthDate,
+  reading,
+}: {
+  station: Station;
+  onOpenDetails: () => void;
+  monthDate: string | null;
+  reading: MonthReading | null;
+}) {
   const latest = station.series.at(-1);
   const previous = station.series.at(-2);
   const doDelta = latest && previous && previous.do !== 0 ? ((latest.do - previous.do) / previous.do) * 100 : null;
@@ -485,6 +613,20 @@ function StationCard({ station, onOpenDetails }: { station: Station; onOpenDetai
           {doBelowClassII(station) ? `DO index ${station.subindex.do}` : `Class ${station.klass}`}
         </Badge>
       </div>
+
+      {monthDate && (
+        <div className="mt-4 rounded-2xl border border-[#8b7cff]/40 bg-[#6d4dff]/15 px-4 py-3">
+          <p className="m-0 text-xs font-medium tracking-wide text-[#b7a6ff] uppercase">Viewing {formatMonth(monthDate)}</p>
+          {reading && reading.sampled ? (
+            <p className="m-0 mt-1 flex items-center gap-2 text-base text-white">
+              <ClassMark value={reading.klass} /> WQI {reading.wqi.toFixed(1)} · DO {reading.do.toFixed(1)} mg/L
+            </p>
+          ) : (
+            <p className="m-0 mt-1 text-base text-white/70">No sample taken this month</p>
+          )}
+          <p className="m-0 mt-1 text-xs text-white/50">The readings below are the latest sample.</p>
+        </div>
+      )}
 
       {oxygenAlert && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#e3873a]/45 bg-[#e3873a]/14 px-3 py-3">
