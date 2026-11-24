@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, LocateFixed, Search, SlidersHorizontal } from "lucide-react";
+import { AlertTriangle, ArrowRight, LocateFixed, Search, SlidersHorizontal, X } from "lucide-react";
 import { ClassMark } from "../components/Charts";
 import { CampusMap } from "../components/map/CampusMap";
 import { StationDetail } from "../components/map/StationDetail";
@@ -16,6 +16,16 @@ import type { DataSource, NwqsClass, Station, WaterBody } from "../data/types";
 import { formatDate, formatMonth } from "../lib/format";
 
 type Range = "all" | "recent";
+
+// NWQS Class II limits, kept in one place so they only need changing once.
+const CLASS_II = { do: 5, nh3n: 0.3, cod: 25, phMin: 6, phMax: 9 };
+
+// "Last 30 days" counts back from the newest sample in the data, not from a fixed date.
+const RECENT_DAYS = 30;
+const newestSample = stations.reduce((latest, station) => (station.lastSample > latest ? station.lastSample : latest), "");
+const recentCutoff = newestSample
+  ? new Date(new Date(newestSample).getTime() - RECENT_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  : "";
 
 const CLASS_SWATCH: Record<NwqsClass, string> = {
   I: "#3b82f6",
@@ -66,7 +76,7 @@ export function MapPage() {
       if (needle && !`${station.id} ${station.name} ${station.waterBody}`.toLowerCase().includes(needle)) {
         return false;
       }
-      if (range === "recent" && station.lastSample < "2026-10-19") return false;
+      if (range === "recent" && station.lastSample < recentCutoff) return false;
       if (body !== "all" && station.waterBody !== body) return false;
       if (klass !== "all" && station.klass !== klass) return false;
       if (source !== "all" && station.source !== source) return false;
@@ -81,7 +91,8 @@ export function MapPage() {
     });
   }, [body, focus, hideGaps, klass, lowDo, parameter, query, range, source]);
 
-  const selected = stations.find((station) => station.id === selectedId) ?? visible[0] ?? null;
+  // Only show a station that still matches the filters; otherwise fall back to the first match.
+  const selected = visible.find((station) => station.id === selectedId) ?? visible[0] ?? null;
   const matchedIds = useMemo(() => new Set(visible.map((station) => station.id)), [visible]);
   const filterColor =
     klass !== "all"
@@ -93,9 +104,30 @@ export function MapPage() {
           : source !== "all"
             ? SOURCE_SWATCH[source]
             : null;
+  const activeFilters = [
+    range !== "all",
+    body !== "all",
+    klass !== "all",
+    source !== "all",
+    lowDo,
+    hideGaps,
+    focus !== null,
+  ].filter(Boolean).length;
   const attention = visible.filter(
     (station) => classDropped(station) || doBelowClassII(station) || !station.fresh || station.qaqc === "fail",
   );
+
+  const clearFilters = () => {
+    setQuery("");
+    setRange("all");
+    setBody("all");
+    setKlass("all");
+    setSource("all");
+    setLowDo(false);
+    setHideGaps(false);
+    setFocus(null);
+    setParameter("wqi");
+  };
 
   const applyView = (name: "campus" | "low-do" | "flow") => {
     setQuery("");
@@ -107,6 +139,7 @@ export function MapPage() {
       setBody("all");
       setLowDo(false);
       setFocus(null);
+      setParameter("wqi");
       setSelectedId("GB-04");
       setLayers((current) => ({ ...current, catchment: true }));
     }
@@ -152,6 +185,16 @@ export function MapPage() {
               aria-label="Station lookup"
               className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-lg text-white outline-none placeholder:text-white/40"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="mr-1 grid size-8 shrink-0 place-items-center rounded-full border-0 bg-transparent text-white/60 hover:bg-white/10 hover:text-white"
+              >
+                <X className="size-4" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setFiltersOpen((open) => !open)}
@@ -164,11 +207,17 @@ export function MapPage() {
             >
               <SlidersHorizontal className="size-5" />
               Filters
+              {activeFilters > 0 && (
+                <span className="grid size-6 place-items-center rounded-full bg-[#6d4dff] text-xs font-semibold text-white">
+                  {activeFilters}
+                </span>
+              )}
             </button>
           </div>
           <p className="mt-2 px-4 text-sm text-white/60">
-            {visible.length} stations{focus ? " · flow path" : ""}
-            {lowDo ? " · DO < 5 mg/L" : ""}
+            {visible.length} {visible.length === 1 ? "station" : "stations"}
+            {focus ? " · flow path" : ""}
+            {lowDo ? ` · DO < ${CLASS_II.do} mg/L` : ""}
           </p>
         </div>
 
@@ -270,6 +319,15 @@ export function MapPage() {
                 <Button type="button" size="sm" variant="outline" onClick={() => applyView("low-do")}>
                   Low DO
                 </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={clearFilters}
+                  disabled={activeFilters === 0 && !query && parameter === "wqi"}
+                >
+                  Clear filters
+                </Button>
               </div>
             </Card>
           )}
@@ -278,7 +336,12 @@ export function MapPage() {
             (selected ? (
               <StationCard station={selected} onOpenDetails={() => setDetailsOpen(true)} />
             ) : (
-              <Card className="p-5 text-sm text-white/60">No stations match these filters.</Card>
+              <Card className="space-y-3 p-5 text-sm text-white/60">
+                <p className="m-0">No stations match these filters.</p>
+                <Button type="button" size="sm" variant="outline" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              </Card>
             ))}
 
           {!detailsOpen && attention.length > 0 && (
@@ -290,7 +353,10 @@ export function MapPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedId(station.id)}
-                      className="flex w-full items-center gap-3 rounded-xl border-0 bg-[#12142b] px-3 py-3 text-left text-sm whitespace-nowrap hover:bg-[#241f45]"
+                      aria-current={station.id === selected?.id ? "true" : undefined}
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm whitespace-nowrap hover:bg-[#241f45] ${
+                        station.id === selected?.id ? "border-[#8b7cff] bg-[#241f45]" : "border-transparent bg-[#12142b]"
+                      }`}
                     >
                       <ClassMark value={station.klass} />
                       <strong>{station.id}</strong>
@@ -379,7 +445,7 @@ function FilterChip({
         pressed ? "border-[#8b7cff] bg-[#6d4dff] text-white" : "border-white/15 bg-transparent text-white/75"
       }`}
     >
-      {color ? <i className="size-2 rounded-full" style={{ background: color }} /> : null}
+      {color ? <i aria-hidden="true" className="size-2 rounded-full" style={{ background: color }} /> : null}
       {children}
     </button>
   );
@@ -389,6 +455,7 @@ function StationCard({ station, onOpenDetails }: { station: Station; onOpenDetai
   const latest = station.series.at(-1);
   const previous = station.series.at(-2);
   const doDelta = latest && previous && previous.do !== 0 ? ((latest.do - previous.do) / previous.do) * 100 : null;
+  const phOk = station.params.ph >= CLASS_II.phMin && station.params.ph <= CLASS_II.phMax;
   const oxygenAlert = doBelowClassII(station) || classDropped(station) || station.trend === "worsening" || station.qaqc === "fail";
   const alertTitle = classDropped(station)
     ? `Class ${station.previousClass} dropped to ${station.klass}`
@@ -397,9 +464,11 @@ function StationCard({ station, onOpenDetails }: { station: Station; onOpenDetai
       : station.trend === "worsening"
         ? "Water quality is decreasing"
         : "Dissolved oxygen is below Class II";
-  const months = [station.series[0], station.series[Math.floor(station.series.length / 2)], station.series.at(-1)].filter(
-    (point): point is NonNullable<typeof point> => Boolean(point),
-  );
+  // First, middle, and last month, without repeats when a station has only one or two samples.
+  const monthIndexes = [...new Set([0, Math.floor(station.series.length / 2), station.series.length - 1])];
+  const months = monthIndexes
+    .map((index) => station.series[index])
+    .filter((point): point is NonNullable<typeof point> => Boolean(point));
 
   return (
     <Card className="p-5">
@@ -413,7 +482,7 @@ function StationCard({ station, onOpenDetails }: { station: Station; onOpenDetai
           <p className="mt-2 text-base text-white/55">{station.waterBody} · Kuala Lumpur</p>
         </div>
         <Badge variant={oxygenAlert ? "alert" : "calm"} className="px-4 py-2 text-base">
-          {doBelowClassII(station) ? `Oxygen ${station.subindex.do}%` : `Class ${station.klass}`}
+          {doBelowClassII(station) ? `DO index ${station.subindex.do}` : `Class ${station.klass}`}
         </Badge>
       </div>
 
@@ -437,33 +506,33 @@ function StationCard({ station, onOpenDetails }: { station: Station; onOpenDetai
           unit="mg/L"
           note={
             doDelta == null
-              ? "Class II limit 5 mg/L"
+              ? `Class II limit ${CLASS_II.do} mg/L`
               : Math.abs(doDelta) < 1
                 ? "Steady vs last sample"
                 : `${doDelta > 0 ? "▲" : "▼"} ${Math.abs(doDelta).toFixed(0)}% vs last sample`
           }
-          good={station.params.do >= 5 && (doDelta == null || doDelta >= -1)}
+          good={station.params.do >= CLASS_II.do && (doDelta == null || doDelta >= -1)}
         />
         <Metric
           label="pH level"
           value={station.params.ph.toFixed(1)}
           unit=""
-          note={station.params.ph >= 6 && station.params.ph <= 9 ? "Neutral" : "Outside 6–9"}
-          good={station.params.ph >= 6 && station.params.ph <= 9}
+          note={phOk ? `Within ${CLASS_II.phMin}–${CLASS_II.phMax}` : `Outside ${CLASS_II.phMin}–${CLASS_II.phMax}`}
+          good={phOk}
         />
         <Metric
           label="NH₃-N"
           value={station.params.nh3n.toFixed(2)}
           unit="mg/L"
-          note={station.params.nh3n <= 0.3 ? "Within Class II" : "Above Class II"}
-          good={station.params.nh3n <= 0.3}
+          note={station.params.nh3n <= CLASS_II.nh3n ? "Within Class II" : "Above Class II"}
+          good={station.params.nh3n <= CLASS_II.nh3n}
         />
         <Metric
           label="COD"
           value={station.params.cod.toFixed(0)}
           unit="mg/L"
-          note={station.params.cod <= 25 ? "Within Class II" : "Above Class II"}
-          good={station.params.cod <= 25}
+          note={station.params.cod <= CLASS_II.cod ? "Within Class II" : "Above Class II"}
+          good={station.params.cod <= CLASS_II.cod}
         />
       </div>
 
