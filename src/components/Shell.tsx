@@ -63,6 +63,7 @@ export function Shell() {
 
 function MapBar() {
   const onMap = useLocation().pathname === "/";
+  const { compareIds } = useApp();
 
   return (
     <header className="sticky top-0 z-[600] flex h-20 shrink-0 items-center gap-3 overflow-hidden bg-[#0c1024] px-6 text-white [&_a]:text-white [&_a]:no-underline">
@@ -84,6 +85,17 @@ function MapBar() {
           Map
         </Link>
       )}
+      <Link
+        to="/compare"
+        className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-base font-medium whitespace-nowrap hover:bg-white/10"
+      >
+        Compare
+        {compareIds.length > 0 && (
+          <span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#e7c56a] px-1.5 text-xs font-semibold text-[#0c1024]">
+            {compareIds.length}
+          </span>
+        )}
+      </Link>
       {onMap && (
         <Link
           to="/upload"
